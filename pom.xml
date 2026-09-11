@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.novapay.poc</groupId>
+  <artifactId>novapay-feature-store</artifactId>
+  <version>5.0.0</version>
+  <packaging>jar</packaging>
+  <name>NovaPay Real-Time Feature Store</name>
+  <description>
+    Real-time feature store reference demo: Kafka (transaction events) -> VoltSP pipeline -> VoltDB
+    (tiered raw + minute/daily aggregates + lifetime profile), rolling-window feature queries
+    with minute-precision, time-based eviction. Kafka producer, VoltSP pipeline, VoltDB stored
+    procedures, load generator, and read-latency benchmark in one buildable module.
+  </description>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.release>17</maven.compiler.release>
+    <!-- 1.6.0 API jars are proven against the locally installed VoltSP 1.7.1 runtime -->
+    <volt.stream.version>1.6.0</volt.stream.version>
+    <!-- matches the local kit at ~/Downloads/voltdb-mac-14.0.1-x86_64 -->
+    <voltdb.version>14.0.1</voltdb.version>
+    <jackson.version>2.17.2</jackson.version>
+    <kafka.version>3.9.1</kafka.version>
+  </properties>
+
+  <dependencies>
+    <!-- VoltSP core (provided by the voltsp runtime) -->
+    <dependency><groupId>org.voltdb</groupId><artifactId>volt-stream-api</artifactId><version>${volt.stream.version}</version><scope>provided</scope></dependency>
+    <dependency><groupId>org.voltdb</groupId><artifactId>volt-stream-connectors-api</artifactId><version>${volt.stream.version}</version><scope>provided</scope></dependency>
+    <!-- VoltSP plugins: kafka source + voltdb-procedure sink -->
+    <dependency><groupId>org.voltdb</groupId><artifactId>volt-stream-plugin-volt-api</artifactId><version>${volt.stream.version}</version><scope>provided</scope></dependency>
+    <dependency><groupId>org.voltdb</groupId><artifactId>volt-stream-plugin-kafka-api</artifactId><version>${volt.stream.version}</version><scope>provided</scope></dependency>
+    <!-- VoltDB client (query bench runs with the kit's voltdbclient jar on the classpath) -->
+    <dependency><groupId>org.voltdb</groupId><artifactId>voltdbclient</artifactId><version>${voltdb.version}</version><scope>provided</scope></dependency>
+    <!-- VoltDB server jar (VoltProcedure, SQLStmt, VoltTable) - installed locally in ~/.m2 -->
+    <dependency><groupId>org.voltdb</groupId><artifactId>voltdb</artifactId><version>${voltdb.version}</version><scope>provided</scope></dependency>
+    <!-- Kafka client for the load generator (shaded into the fat jar) -->
+    <dependency><groupId>org.apache.kafka</groupId><artifactId>kafka-clients</artifactId><version>${kafka.version}</version></dependency>
+    <!-- JSON -->
+    <dependency><groupId>com.fasterxml.jackson.core</groupId><artifactId>jackson-databind</artifactId><version>${jackson.version}</version></dependency>
+  </dependencies>
+
+  <build>
+    <finalName>novapay-feature-store</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.14.0</version>
+      </plugin>
+      <!-- classes-only jar of the stored procedures, for sqlcmd LOAD CLASSES -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.4.2</version>
+        <executions>
+          <execution>
+            <id>procedures-jar</id>
+            <phase>package</phase>
+            <goals><goal>jar</goal></goals>
+            <configuration>
+              <classifier>procedures</classifier>
+              <includes>
+                <include>com/novapay/poc/procedures/**</include>
+              </includes>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!-- fat jar: pipeline classpath for voltsp CLI + self-contained loadgen/bench -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.6.0</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals><goal>shade</goal></goals>
+            <configuration>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
+              <shadedArtifactAttached>true</shadedArtifactAttached>
+              <shadedClassifierName>all</shadedClassifierName>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

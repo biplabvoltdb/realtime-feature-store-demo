@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!--
+  VoltDB deployment template — point settings.env VOLTDB_CONFIG at this file
+  (scripts/02_start_voltdb.sh passes it to `voltdb init --config`).
+
+  Single node, tuned sites-per-host:
+    - hostcount = 1, kfactor = 0
+    - sitesperhost: number of execution sites (partitions) per host. Rule of thumb
+      on an N-vCPU machine that is 2 hyperthreads/core: start around N/2 and leave
+      cores for the network / command-log / TTL / GC threads. 16 vCPU -> try 8.
+
+  Cluster (high availability):
+    - hostcount = number of VoltDB nodes (e.g. 3)
+    - kfactor   = replicas to tolerate node loss (k=1 survives 1 node down; needs
+                  hostcount >= kfactor+1 and an even partition distribution)
+    - start every node with the SAME config and:
+        voltdb start --dir=<root> --count=<hostcount> --host=<node1>,<node2>,<node3>
+    - See docs/DEPLOYMENT.md for the full cluster walk-through.
+-->
+<deployment>
+  <cluster hostcount="1" sitesperhost="8" kfactor="0"/>
+  <commandlog enabled="true">
+    <frequency time="200" transactions="10000"/>
+  </commandlog>
+  <httpd enabled="true">
+    <jsonapi enabled="true"/>
+  </httpd>
+  <snapshot enabled="false"/>
+</deployment>

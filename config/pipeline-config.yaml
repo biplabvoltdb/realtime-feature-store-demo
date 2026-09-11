@@ -1,0 +1,18 @@
+# VoltSP runtime configuration for the NovaPay Real-Time Feature Store demo.
+# Pass to the CLI with:
+#   voltsp -l <license> --config config/pipeline-config.yaml com.novapay.poc.pipeline.TxnFeaturePipeline
+
+kafka:
+  bootstrap:       "${env:KAFKA_BOOTSTRAP:localhost:9092}"
+  sourceTopic:     "${env:TOPIC_EVENTS:novapay-txn-events}"
+  dlqTopic:        "${env:TOPIC_DLQ:novapay-txn-dlq}"
+  groupId:         "${env:CONSUMER_GROUP:novapay-feature-agg}"
+  startingOffset:  "LATEST"
+
+volt:
+  servers:         "${env:VOLTDB_SERVERS:localhost:21212}"
+
+ingest:
+  # PoV §2.2 / C2: events with created_at older than this are dropped and
+  # counted (counter "dropped_late"), never absorbed into the wrong window.
+  latenessSeconds: "86400"

@@ -1,0 +1,26 @@
+# ---- build artifacts ----
+target/
+ui/node_modules/
+ui/dist/
+ui/run/
+gateway/out/
+
+# ---- runtime state ----
+voltdbroot/
+logs/
+*.log
+.voltdb_server/
+
+# ---- local configuration & secrets (NEVER commit) ----
+settings.env
+*.license.xml
+*-license.xml
+license.xml
+*_license*.xml
+*Enterprise*.xml
+
+# ---- editor / OS ----
+.DS_Store
+.idea/
+*.iml
+.vscode/

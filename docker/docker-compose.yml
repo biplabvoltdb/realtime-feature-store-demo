@@ -1,0 +1,107 @@
+# ===========================================================================
+# Reference Docker topology: Kafka + VoltDB + VoltSP + load generator, wired on
+# one Docker network. This mirrors the "single VM" topology, containerized.
+#
+# PREREQUISITES (see docs/DEPLOYMENT.md → Docker):
+#   1. An Enterprise trial license from Volt Active Data, path in docker/.env
+#      (LICENSE_FILE). It is mounted read-only into the VoltDB and VoltSP containers.
+#   2. The application jar. Because the Maven build needs the licensed Volt jars,
+#      build once on the host:  mvn -q -DskipTests package
+#      (the app/loadgen services mount ../target). Alternatively build the
+#      novapay-app image with docker/Dockerfile.app once your kits are resolvable.
+#   3. Adjust image tags below to versions you are licensed for.
+#
+# Start infra + pipeline:   docker compose --env-file .env up -d kafka voltdb voltsp
+# Deploy schema:            docker compose run --rm schema
+# Generate load:            docker compose run --rm loadgen
+# ===========================================================================
+name: novapay-feature-store
+
+services:
+  kafka:
+    image: apache/kafka:3.7.0
+    hostname: kafka
+    ports: ["9092:9092"]
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_LOG_RETENTION_BYTES: "1610612736"   # 1.5 GB/partition cap (see docs)
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  # One-shot: create the source + DLQ topics.
+  topics:
+    image: apache/kafka:3.7.0
+    depends_on:
+      kafka: { condition: service_healthy }
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        kt() { /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 "$$@"; }
+        kt --create --if-not-exists --topic novapay-txn-events --partitions 50 --replication-factor 1
+        kt --create --if-not-exists --topic novapay-txn-dlq    --partitions 4  --replication-factor 1
+        kt --list
+
+  voltdb:
+    image: voltdb/voltdb-enterprise:14.0.1   # adjust to your licensed version
+    hostname: voltdb
+    ports: ["21212:21212", "8080:8080"]
+    environment:
+      # Disable THP requirement noise for a single dev node; production uses a tuned host.
+      VOLTDB_OPTS: ""
+    volumes:
+      - ${LICENSE_FILE}:/opt/voltdb/voltdb/license.xml:ro
+      - voltdbroot:/opt/voltdb/voltdbroot
+    # The official image inits + starts a single node. See docs for cluster (hostcount/kfactor).
+
+  # One-shot: deploy schema + procedures once VoltDB is up (needs the built jar).
+  schema:
+    image: voltdb/voltdb-enterprise:14.0.1
+    depends_on: [voltdb]
+    working_dir: /work
+    volumes:
+      - ../:/work:ro
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        sqlcmd --servers=voltdb < /work/src/main/resources/remove_db.sql || true
+        sqlcmd --servers=voltdb < /work/src/main/resources/ddl.sql
+
+  voltsp:
+    image: voltdb/volt-stream:1.7.1          # adjust to your licensed version
+    depends_on: [voltdb, topics]
+    environment:
+      KAFKA_BOOTSTRAP: kafka:9092
+      VOLTDB_SERVERS: voltdb:21212
+      TOPIC_EVENTS: novapay-txn-events
+      TOPIC_DLQ: novapay-txn-dlq
+      CONSUMER_GROUP: novapay-feature-agg
+    volumes:
+      - ${LICENSE_FILE}:/license.xml:ro
+      - ../config:/config:ro
+      - ../target:/target:ro                 # built fat jar (mvn package on host)
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        export CP=$$(ls /target/*-all.jar | head -1)
+        voltsp -l /license.xml --config /config/pipeline-config.yaml com.novapay.poc.pipeline.TxnFeaturePipeline
+
+  # On-demand load generator (built jar). `docker compose run --rm loadgen [eps] [customers]`
+  loadgen:
+    build: { context: .., dockerfile: docker/Dockerfile.app }
+    image: novapay-app:5.0.0
+    depends_on: [topics]
+    profiles: ["tools"]
+    command: ["com.novapay.poc.loadgen.TxnLoadGenerator", "${EPS:-2000}", "${CUSTOMERS:-10000000}", "kafka:9092", "novapay-txn-events"]
+
+volumes:
+  voltdbroot:

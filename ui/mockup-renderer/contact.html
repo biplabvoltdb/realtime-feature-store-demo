@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NovaPay Feature Store Console — Screen Index</title>
+    <style>
+      * { box-sizing: border-box; }
+      html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; }
+      body { background: #eef1f6; color: #111827; font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; padding: 28px 32px 24px; }
+      header { height: 72px; display: flex; align-items: flex-start; justify-content: space-between; }
+      h1 { margin: 0; font-size: 25px; line-height: 31px; letter-spacing: -.45px; }
+      p { margin: 5px 0 0; color: #69768d; font-size: 12px; }
+      .meta { color: #64748b; font-size: 11px; background: white; border: 1px solid #dfe4ec; padding: 9px 12px; border-radius: 9px; }
+      main { height: calc(100% - 72px); display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(3, 1fr); gap: 16px; }
+      figure { margin: 0; background: white; border: 1px solid #dce2eb; border-radius: 11px; overflow: hidden; box-shadow: 0 2px 5px rgba(15,23,42,.05); position: relative; }
+      img { display: block; width: 100%; height: calc(100% - 30px); object-fit: cover; object-position: top left; }
+      figcaption { height: 30px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; border-top: 1px solid #e6eaf0; font-size: 10px; font-weight: 650; }
+      figcaption span:last-child { color: #8390a5; font-weight: 500; }
+      .notes { padding: 18px; display: flex; flex-direction: column; justify-content: center; gap: 10px; background: linear-gradient(145deg,#fff,#f7f9fc); }
+      .notes strong { font-size: 15px; }.notes div { color: #66748a; font-size: 11px; line-height: 1.55; }
+      .pill { width: fit-content; color: #2563eb; background: #eff6ff; border-radius: 999px; padding: 4px 8px; font-size: 9px; font-weight: 700; }
+    </style>
+  </head>
+  <body>
+    <header><div><h1>NovaPay Feature Store Console</h1><p>Implementation-ready desktop screen set · 11 routes · VoltCore-inspired operations-console direction</p></div><div class="meta">1920 × 1080 PNG · light theme · 02 Sep 2026</div></header>
+    <main>
+      <figure><img src="../design-screens/01-overview.png" /><figcaption><span>01 · Overview</span><span>health + activity</span></figcaption></figure>
+      <figure><img src="../design-screens/02-architecture.png" /><figcaption><span>02 · Architecture</span><span>live flow + drawer</span></figcaption></figure>
+      <figure><img src="../design-screens/03-schema.png" /><figcaption><span>03 · Schema & DDL</span><span>catalog comparison</span></figcaption></figure>
+      <figure><img src="../design-screens/04-procedures.png" /><figcaption><span>04 · Procedures</span><span>runner + source</span></figcaption></figure>
+      <figure><img src="../design-screens/05-sql.png" /><figcaption><span>05 · SQL Console</span><span>editor + results</span></figcaption></figure>
+      <figure><img src="../design-screens/06-explorer.png" /><figcaption><span>06 · Feature Explorer</span><span>hot / warm evidence</span></figcaption></figure>
+      <figure><img src="../design-screens/07-hygiene.png" /><figcaption><span>07 · Ingest Hygiene</span><span>rejects + TTL</span></figcaption></figure>
+      <figure><img src="../design-screens/08-benchmarks.png" /><figcaption><span>08 · Benchmarks</span><span>server + client</span></figcaption></figure>
+      <figure><img src="../design-screens/09-sizing.png" /><figcaption><span>09 · Sizing (§8)</span><span>measured projection</span></figcaption></figure>
+      <figure><img src="../design-screens/10-runbook.png" /><figcaption><span>10 · Demo Runbook</span><span>repeatable proof</span></figcaption></figure>
+      <figure><img src="../design-screens/11-settings.png" /><figcaption><span>11 · Settings</span><span>connection + safety</span></figcaption></figure>
+      <figure class="notes"><span class="pill">HANDOFF NOTES</span><strong>One visual system, eleven task-specific surfaces.</strong><div>Use the exact tier colors, 192 px sidebar, 64 px header, compact 1 px bordered cards, and tabular metrics shown here. These screenshots are deterministic browser renders, so all labels and identifiers are implementation-safe.</div></figure>
+    </main>
+  </body>
+</html>
